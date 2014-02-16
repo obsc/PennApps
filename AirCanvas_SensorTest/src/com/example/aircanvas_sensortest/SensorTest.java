@@ -46,6 +46,7 @@ public class SensorTest extends Activity implements SensorEventListener {
 	}
 	
 	public void onSensorChanged(SensorEvent event) {
+		// past value: acce_data; measured value: event.values
 		// low pass filter
 		if (zero) {
 			accel_data = event.values;

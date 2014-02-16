@@ -72,9 +72,6 @@ public class SensorTest extends Activity implements SensorEventListener {
 		
 		for (int i = 0; i < event.values.length; i++) {
 			event.values[i] = event.values[i] * ratio;
-			if (event.values[i] < 0) {
-				event.values[i] = 0;
-			}
 		}
 		
 		// velocity

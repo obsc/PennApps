@@ -12,7 +12,9 @@ import android.widget.TextView;
 
 public class SensorTest extends Activity implements SensorEventListener {
 	
-	private static float ALPHA = 0.01f;		// Low-pass filter smoothing constant
+	private static final float ALPHA = 0.01f;		// Low-pass filter smoothing constant
+	private static final float THRESHA = 0.15f;
+	private static final float THRESHB = 0.4f;
 	
 	private SensorManager sm;
 	private Sensor accel;
@@ -55,7 +57,25 @@ public class SensorTest extends Activity implements SensorEventListener {
 				event.values[i] = ALPHA * event.values[i] - (1.0f - ALPHA) * accel_data[i];
 			accel_data = event.values;
 		}
-
+		
+		float mag = 0.0f;
+		
+		for (int i = 0; i < event.values.length; i++) {
+			mag += (event.values[i] * event.values[i]);
+		}
+		
+		mag = (float) Math.sqrt(mag);
+		float ratio = (mag - THRESHA) / (THRESHB - THRESHA);
+		ratio = Math.max(0.0f, ratio);
+		ratio = Math.min(1.0f, ratio);
+		
+		for (int i = 0; i < event.values.length; i++) {
+			event.values[i] = event.values[i] * ratio;
+			if (event.values[i] < 0) {
+				event.values[i] = 0;
+			}
+		}
+		
 		// velocity
 		for (int i = 0; i < vel_data.length; i++) {
 			vel_data[i] += event.values[i];

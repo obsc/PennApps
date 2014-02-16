@@ -28,7 +28,7 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 	private Camera mCamera;
 	private CameraPreview mPreview;
 
-//	private Visualization mDraw;
+	private MyGLSurfaceView mDraw;
 	// Android image data used for displaying the results
 	private Bitmap output;
 
@@ -52,15 +52,16 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 		setContentView(R.layout.activity_main);
 
 		// Used to visualize the results
-//		mDraw = new Visualization(this);
+		mDraw = new MyGLSurfaceView(this);
 
 		// Create our Preview view and set it as the content of our activity.
 		mPreview = new CameraPreview(this,this,false);
 
 		FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
 
+		preview.addView(mDraw);
 		preview.addView(mPreview);
-//		preview.addView(mDraw);
+		
 	}
 
 	@Override

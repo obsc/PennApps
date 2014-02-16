@@ -3,11 +3,8 @@ package com.aircanvas;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.view.SurfaceView;
 import android.view.Window;
 import android.widget.FrameLayout;
 
@@ -30,15 +27,6 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 
 	private MyGLSurfaceView mDraw;
 	// Android image data used for displaying the results
-	private Bitmap output;
-
-	// Thread where image data is processed
-	private ThreadProcess thread;
-
-	// Object used for synchronizing gray images
-	private final Object lockGray = new Object();
-	// Object used for synchronizing output image
-	private final Object lockOutput = new Object();
 
 	// if true the input image is flipped horizontally
 	// Front facing cameras need to be flipped to appear correctly
@@ -82,8 +70,6 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 			mCamera.release();
 			mCamera = null;
 
-			thread.stopThread();
-			thread = null;
 		}
 	}
 
@@ -103,8 +89,6 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 		mCamera.setParameters(param);
 
 		// start image processing thread
-		thread = new ThreadProcess();
-		thread.start();
 
 		// Start the video feed by passing it to mPreview
 		mPreview.setCamera(mCamera);
@@ -189,95 +173,6 @@ public class VideoActivity extends Activity implements Camera.PreviewCallback {
 	@Override
 	public void onPreviewFrame(byte[] bytes, Camera camera) {
 
-		// convert from NV21 format into gray scale
-		synchronized (lockGray) {
-		}
-
-		// Can only do trivial amounts of image processing inside this function or else bad stuff happens.
-		// To work around this issue most of the processing has been pushed onto a thread and the call below
-		// tells the thread to wake up and process another image
-		thread.interrupt();
 	}
 
-	/**
-	 * Draws on top of the video stream for visualizing computer vision results
-	 */
-	private class Visualization extends SurfaceView {
-
-		Activity activity;
-
-		public Visualization(Activity context ) {
-			super(context);
-			this.activity = context;
-
-			// This call is necessary, or else the
-			// draw method will not be called.
-			setWillNotDraw(false);
-		}
-
-		@Override
-		protected void onDraw(Canvas canvas){
-
-			synchronized ( lockOutput ) {
-				int w = canvas.getWidth();
-				int h = canvas.getHeight();
-
-				// fill the window and center it
-				double scaleX = w/(double)output.getWidth();
-				double scaleY = h/(double)output.getHeight();
-
-				double scale = Math.min(scaleX,scaleY);
-				double tranX = (w-scale*output.getWidth())/2;
-				double tranY = (h-scale*output.getHeight())/2;
-
-				canvas.translate((float)tranX,(float)tranY);
-				canvas.scale((float)scale,(float)scale);
-
-				// draw the image
-				canvas.drawBitmap(output,0,0,null);
-			}
-		}
-	}
-
-	/**
-	 * External thread used to do more time consuming image processing
-	 */
-	private class ThreadProcess extends Thread {
-
-		// true if a request has been made to stop the thread
-		volatile boolean stopRequested = false;
-		// true if the thread is running and can process more data
-		volatile boolean running = true;
-
-		/**
-		 * Blocks until the thread has stopped
-		 */
-		public void stopThread() {
-			stopRequested = true;
-			while( running ) {
-				thread.interrupt();
-				Thread.yield();
-			}
-		}
-
-		@Override
-		public void run() {
-
-			while( !stopRequested ) {
-
-				// Sleep until it has been told to wake up
-				synchronized ( Thread.currentThread() ) {
-					try {
-						wait();
-					} catch (InterruptedException ignored) {}
-				}
-
-				// process the most recently converted image by swapping image buffered
-				synchronized (lockGray) {
-				}
-				
-			}
-
-		}
-	}
 }

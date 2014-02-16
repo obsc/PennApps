@@ -19,6 +19,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
+import android.util.Log;
 import android.view.MotionEvent;
 
 /**
@@ -29,6 +30,11 @@ import android.view.MotionEvent;
 public class MyGLSurfaceView extends GLSurfaceView {
 
     private final MyGLRenderer mRenderer;
+    
+    private boolean down;
+    
+    private float downx;
+    private float downy;
 
     public MyGLSurfaceView(Context context) {
         super(context);
@@ -42,14 +48,8 @@ public class MyGLSurfaceView extends GLSurfaceView {
         setRenderer(mRenderer);
 
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
-
-        // this made it work for me - works only from sdk level 6 on, though....
-        setZOrderOnTop(true);
         
-        
-//        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         setZOrderOnTop(true);
-        getHolder().setFormat(PixelFormat.TRANSLUCENT);
 
         // Render the view only when there is a change in the drawing data
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -73,27 +73,51 @@ public class MyGLSurfaceView extends GLSurfaceView {
 
         float x = e.getX();
         float y = e.getY();
-
+        
+        float maxx = getWidth();
+        float maxy = getHeight();
+        
+        float threshx = maxx / 8;
+        float threshy = maxy / 8;
+        
         switch (e.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+            	down = true;
+            	downx = x;
+            	downy = y;
+            	break;
+            case MotionEvent.ACTION_UP:
+            	down = false;
+            	mRenderer.action_up();
+            	requestRender();
+            	break;
             case MotionEvent.ACTION_MOVE:
-
                 float dx = x - mPreviousX;
                 float dy = y - mPreviousY;
-
-                // reverse direction of rotation above the mid-line
-                if (y > getHeight() / 2) {
-                    dx = dx * -1 ;
-                }
-
-                // reverse direction of rotation to left of the mid-line
-                if (x < getWidth() / 2) {
-                    dy = dy * -1 ;
-                }
-
-                mRenderer.setAngle(
-                        mRenderer.getAngle() +
-                        ((dx + dy) * TOUCH_SCALE_FACTOR));  // = 180.0f / 320
-                requestRender();
+                break;
+        }
+        
+        if (down) {
+            if (downx > threshx && downx < maxx - threshx && downy > threshy & downy < maxy + threshy) {
+//            	mRenderer.drawing(x,y);
+            	
+            }
+            else {
+            if (downx < threshx) {
+            	mRenderer.left();
+            }
+            if (downx > maxx - threshx) {
+            	mRenderer.right();
+            }
+            if (downy < threshy) {
+            	mRenderer.back();
+            }
+            if (downy > maxy - threshy) {
+            	mRenderer.forward();
+            }
+            
+            requestRender();
+            }
         }
 
         mPreviousX = x;

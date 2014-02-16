@@ -15,6 +15,8 @@
  */
 package com.aircanvas;
 
+import java.util.ArrayList;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -35,9 +37,19 @@ import android.util.Log;
 public class MyGLRenderer implements GLSurfaceView.Renderer {
 
     private static final String TAG = "MyGLRenderer";
-    private TriLine mTriLine, nTriLine;
-    private Square mSquare;
+    private static final float delta = 0.025f;
+    private ArrayList<TriLine> triLines = new ArrayList<TriLine>();
+    
+    private float xoff = 0;
+    private float yoff = 0;
+    private float zoff = 0;
 
+    private float prevx = 0;
+    private float prevy = 0;
+    
+    private boolean isDrawing = false;
+    private ArrayList<Float> drawingList;
+    
     // mMVPMatrix is an abbreviation for "Model View Projection Matrix"
     private final float[] mMVPMatrix = new float[16];
     private final float[] mProjectionMatrix = new float[16];
@@ -53,7 +65,6 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         int numPts = 19;
         float radius = .4f;
-        float epsilon = .5f;
         float[] circle = new float[3*numPts];
         int a = 0;
         for (int i = 0; i < 3*numPts; i+=3) {
@@ -63,9 +74,8 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         	a++;
         }
         
-        mTriLine = new TriLine(circle, numPts);
-        nTriLine = new TriLine(circle, numPts);
-        //mSquare = new Square();
+        triLines.add(new TriLine(circle, numPts));
+        Log.i(TAG, "" + triLines.size());
     }
 
     @Override
@@ -76,13 +86,15 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         // Set the camera position (View matrix)
-        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, xoff, yoff, zoff, 0f, 1.0f, 0.0f);
 
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 
-        // Draw square
-        mTriLine.draw(mMVPMatrix);
+        for (int i = 0; i < triLines.size(); i++) {
+        	triLines.get(i).draw(mMVPMatrix);
+        	Log.i(TAG, "size: " + triLines.size() + ", i: " + i);
+        }
         //mSquare.draw(mMVPMatrix);
 
         // Create a rotation for the triangle
@@ -98,9 +110,6 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         // Note that the mMVPMatrix factor *must be first* in order
         // for the matrix multiplication product to be correct.
         Matrix.multiplyMM(scratch, 0, mMVPMatrix, 0, mRotationMatrix, 0);
-
-        // Draw triangle
-        nTriLine.draw(scratch);
     }
 
     @Override
@@ -160,20 +169,55 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         }
     }
 
-    /**
-     * Returns the rotation angle of the triangle shape (mTriangle).
-     *
-     * @return - A float representing the rotation angle.
-     */
-    public float getAngle() {
-        return mAngle;
+    public void left() {
+    	xoff += delta;
+    }
+    
+    public void right() {
+    	xoff -=delta;
+    }
+    
+    public void forward() {
+    	yoff -= delta;
     }
 
-    /**
-     * Sets the rotation angle of the triangle shape (mTriangle).
-     */
-    public void setAngle(float angle) {
-        mAngle = angle;
+    public void back() {
+    	yoff += delta; 
     }
-
+    
+    public void drawing(float x, float y) {
+    	if (!isDrawing) {
+    		isDrawing = true;
+    		prevx = x;
+    		prevy = y;
+    		drawingList = new ArrayList<Float>();
+    		drawingList.add(x/1000);
+    		drawingList.add(y/800);
+    		drawingList.add(1.0f);
+    	}
+    	else {
+    		if (Math.abs(x - prevx)+ Math.abs(y - prevy) > 25) {
+    			prevx = x;
+        		prevy = y;
+        		Log.i(TAG, "X: " + x + ",Y: " + y);
+        		drawingList.add(x/1000);
+        		drawingList.add(y/800);
+        		drawingList.add(1.0f);
+    		}
+    	}
+    }
+    
+    public void action_up() {
+    	if (isDrawing) {
+    		isDrawing = false;
+    		float[] lst = new float[drawingList.size()];
+    		int i = 0;
+    		for (float f : drawingList) {
+    			lst[i++] = f;
+    		}
+    		
+    		triLines.add(new TriLine(lst, lst.length/3));
+    	}
+    }
+    
 }

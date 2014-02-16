@@ -7,10 +7,13 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.view.Menu;
 import android.widget.TextView;
 
 public class SensorTest extends Activity implements SensorEventListener {
+	
+	private static final String TAG = "SensorTest";
 	
 	private static final float ALPHA = 0.05f;		// Low-pass filter smoothing constant
 	private static final float THRESHA = 0.15f;		// Hard threshold
@@ -29,6 +32,8 @@ public class SensorTest extends Activity implements SensorEventListener {
 	private boolean inMotion = false;
 	
 	private boolean zero = true;
+	
+	private long accelTime = System.currentTimeMillis();
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +59,9 @@ public class SensorTest extends Activity implements SensorEventListener {
 	}
 	
 	public void onSensorChanged(SensorEvent event) {
+		long t = System.currentTimeMillis();
+		Log.i(TAG, "accel time: " + (t - accelTime));
+		accelTime = t;
 		// past value: acce_data; measured value: event.values
 		// low pass filter
 		if (zero) {
